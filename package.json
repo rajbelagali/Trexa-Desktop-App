@@ -1,0 +1,33 @@
+{
+  "name": "trexaapp",
+  "version": "1.0.0",
+  "description": "Trexa Electron App",
+  "author": "Your Name",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.trexa.trexaapp",
+    "productName": "Trexa",
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "your-github-username",
+        "repo": "your-repo-name"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^29.4.6",
+    "electron-builder": "^26.0.12"
+  }
+}

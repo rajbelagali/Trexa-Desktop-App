@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>DragonBar-Like Stripe</title>
+  <link rel="stylesheet" href="style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css"
+  />
+  <style>
+    /* .tagify__tag {
+      display: none !important;
+    } */
+
+    .status-tick {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 20px;
+      color: #2ecc71;
+      z-index: 100;
+      cursor: pointer;
+    }
+
+    .status-tick i {
+      animation: popIn 0.3s ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0.6);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dragonbar" style="position: relative;">
+    <!-- Logo -->
+    <div id="logoBtn">
+      <img src="assets/img/l44_2.png" class="img-class" />
+    </div>
+  
+    <!-- Timer -->
+    <div class="button">
+      <span><i class="fas fa-stopwatch"></i></span>
+      <label id="timer-display">00:00</label>
+    </div>
+  
+    <!-- Template search -->
+    <input
+      id="templateSearch"
+      class="no-drag"
+      placeholder="Search templates"
+      autocomplete="off"
+    />
+    <div id="selectedCountDisplay" class="selected-counter" onclick="showSelectedTags()" style="display: none; cursor: pointer;">
+      0 
+    </div>
+  
+    <!-- Patient Information -->
+    <div class="patient-info ris-info hiddenDiv">
+      <div><strong>Name:</strong> John Doe</div>
+      <div><strong>DOB:</strong> 1990-05-15</div>
+      <div><strong>Age:</strong> 35</div>
+    </div>
+  
+    <!-- ✅ Tick Mark -->
+    <div id="statusTick" class="status-tick hiddenDiv right" title="Ready">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div id="statusTick" class="status-tick hiddenDiv cross" title="Ready">
+      <i class="fas fa-close"></i>
+    </div>
+  
+    <!-- Dictate -->
+    <div id="dictateBtn" class="button" onclick="toggleDictate()">
+      <span id="dictateIcon"><i class="fas fa-microphone"></i></span>
+      <label id="dictateLabel">Dictate</label>
+    </div>
+  
+    <!-- Submit -->
+    <div class="button disabled-btn" id="submit-btn" onclick="window.stripAPI.triggerMainAction('submit')">
+      <span><i class="fas fa-paper-plane"></i></span>
+      <label>Submit</label>
+    </div>
+  
+    <!-- Copy -->
+    <div class="button disabled-btn" id="copy-btn" onclick="window.electronAPI.copyToClipboard(text)">
+      <span><i class="fas fa-copy"></i></span>
+      <label>Copy</label>
+    </div>
+  
+    <!-- Download -->
+    <div class="button disabled-btn" id="download-btn" onclick="window.stripAPI.triggerMainAction('download')">
+      <span><i class="fas fa-download"></i></span>
+      <label>Download</label>
+    </div>
+  
+    <!-- Send to RIS -->
+    <div class="button disabled-btn" id="send-ris" onclick="window.stripAPI.triggerMainAction('send-ris')">
+      <span><i class="fas fa-print"></i></span>
+      <label>Send to RIS</label>
+    </div>
+  
+    <!-- Authorize -->
+    <div class="button disabled-btn" id="authorize-btn" onclick="window.stripAPI.triggerMainAction('authorize')">
+      <span><i class="fas fa-key"></i></span>
+      <label>Authorize</label>
+    </div>
+  
+    <!-- Edit (kept for internal logic, but hidden by default) -->
+    <div class="button disabled-btn" id="edit-btn" onclick="renableSubmit()" style="display: none;">
+      <span><i class="fas fa-edit"></i></span>
+      <label>Edit</label>
+    </div>
+  </div>
+
+  <!-- JS & Tagify -->
+  <script src="renderer.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+
+  <script>
+    const input = document.getElementById("templateSearch");
+
+    const tagify = new Tagify(input, {
+      whitelist: [],
+      enforceWhitelist: true,
+      dropdown: {
+        enabled: 1,
+        maxItems: 15,
+        closeOnSelect: false,
+        position: "input",
+        highlightFirst: true,
+      },
+      editTags: false,
+      duplicates: false,
+    });
+
+    let selectedTagCount = 0;
+    const tagsInput = document.getElementsByClassName("tagify__input")[0];
+
+    function updateCounter() {
+      selectedTagCount = tagify.value.length;
+      const counterDisplay = document.getElementById("selectedCountDisplay");
+      tagsInput.style.visibility = "hidden";
+
+      if (selectedTagCount > 0) {
+        counterDisplay.textContent = `${selectedTagCount}`;
+        counterDisplay.style.display = "inline-block";
+        counterDisplay.style.cursor = "pointer";
+
+        // Set placeholder only if needed
+        tagify.DOM.input.placeholder = "Search templates";
+        tagify.DOM.input.setAttribute("readonly", true);
+      } else {
+        counterDisplay.style.display = "none";
+
+        tagify.DOM.input.placeholder = "Search templates";
+        tagify.DOM.input.removeAttribute("readonly");
+      }
+    }
+
+    function showSelectedTags() {
+      tagify.dropdown.show();
+      setTimeout(() => {
+        const selectedValues = tagify.value.map(tag => tag.value.toLowerCase());
+        const items = tagify.DOM.dropdown.querySelectorAll(".tagify__dropdown__item");
+
+        let firstMatchEl = null;
+
+        items.forEach(el => {
+          const label = el.textContent.trim().toLowerCase();
+
+          if (selectedValues.includes(label)) {
+            el.classList.add("highlighted-item");
+            if (!firstMatchEl) firstMatchEl = el;
+          } else {
+            el.classList.remove("highlighted-item");
+          }
+        });
+
+        if (firstMatchEl) {
+          firstMatchEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 100);
+    }
+
+    tagify.on("change", updateCounter);
+    tagify.on("dropdown:select", () => {
+      tagsInput.style.visibility = "visible";
+      $('.tagify__dropdown').remove();
+
+      setTimeout(() => {
+        sendSelectedTemplatesToMainApp();
+      }, 50);
+    });
+    tagify.on("remove", () => {
+      setTimeout(() => {
+        sendSelectedTemplatesToMainApp();
+      }, 50);
+    });
+    input.addEventListener("blur", () => {
+      setTimeout(updateCounter, 100);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (tagsInput) {
+        tagsInput.style.visibility = "visible";
+        tagify.DOM.input.placeholder = "Search templates";
+      }
+    });
+    // document.addEventListener("click", (event) => {
+    //   const isInside = tagify.DOM.scope.contains(event.target) || event.target.id === "selectedCountDisplay";
+    //   if (!isInside) {
+    //     setTimeout(updateCounter, 100);
+    //   }
+    // });
+    function sendSelectedTemplatesToMainApp() {
+      const selectedTemplates = tagify.value.map(tag => tag.name);
+      window.floatingAPI.sendSelectedTemplates(selectedTemplates);
+    }
+
+    fetch("https://smartmedsolution.com/api/reporttemplate/all")
+    .then((res) => res.json())
+    .then((data) => {
+      const templateNames = data
+        .filter((item) => item.templateName)
+        .map((item, index) => ({
+          value: item.templateName,  // keep actual value
+          name: item.id, // display label
+        }));
+      tagify.whitelist = templateNames;
+    })
+    .catch((err) => console.error("Failed to load templates:", err));
+
+    // tagify.on("dropdown:show", () => {
+    //   window.floatingAPI.resizeFloatingBar(200);
+    // });
+    // tagify.on("dropdown:hide", () => {
+    //   window.floatingAPI.resizeFloatingBar(70);
+    // });
+
+    let isDictating = false;
+
+    function toggleDictate() {
+      isDictating = !isDictating;
+
+      const icon = document.querySelector("#dictateIcon i");
+      const label = document.getElementById("dictateLabel");
+
+      if (isDictating) {
+        icon.className = "fas fa-stop";
+        label.textContent = "Stop";
+        window.stripAPI.triggerMainAction("start-dictate");
+      } else {
+        icon.className = "fas fa-microphone";
+        label.textContent = "Dictate";
+        window.stripAPI.triggerMainAction("stop-dictate");
+      }
+      document.getElementById("dictateBtn").classList.toggle("stopClass");
+    }
+
+    function renableSubmit() {
+      window.stripAPI.triggerMainAction('edit-btn');
+      const buttonIds = ['edit-btn', 'send-ris', 'copy-btn', 'download-btn', 'authorize-btn'];
+      buttonIds.forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.classList.add('disabled-btn');
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      let startTime = Date.now();
+      const display = document.getElementById('timer-display');
+
+      setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        const padded = (n) => String(n).padStart(2, '0');
+        display.textContent = `${padded(minutes)}:${padded(seconds)}`;
+      }, 1000);
+
+      window.stripMainAPI.onMainMessage((data) => {
+        if (data.type === 'updatePatientInfo') {
+          const { name, dob, age } = data.payload;
+          document.querySelector('.patient-info').innerHTML = `
+            <div><strong>Name:</strong> ${name}</div>
+            <div><strong>DOB:</strong> ${dob}</div>
+            <div><strong>Age:</strong> ${age}</div>
+          `;
+        }
+      });
+
+      // ✅ Toggle tick mark visibility on click
+      document.getElementById('statusTick').addEventListener('click', () => {
+        const tick = document.getElementById('statusTick');
+        tick.style.display = tick.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    window.stripSubmitAPI.onMainMessage((data) => {
+      if (data.type === 'toggleSubmit') {
+        const { enable } = data.payload;
+        const submitBtn = document.getElementById('submit-btn');
+        if (enable) {
+          submitBtn.classList.remove('disabled-btn');
+        } else {
+          submitBtn.classList.add('disabled-btn');
+        }
+      }
+    });
+    window.RIS_AVL.onMainMessage((data) => {
+      if (data.type === 'RIS_AVL') {
+        const { enable, patientName,dob, age } = data.payload;
+        $('.status-tick').addClass('hiddenDiv');
+        if(enable) {
+          $('.ris-info').removeClass('hiddenDiv');
+          $('.right').removeClass('hiddenDiv');
+          document.querySelector('.patient-info').innerHTML = `
+            <div><strong>Name:</strong> ${patientName}</div>
+            <div><strong>DOB:</strong> ${dob}</div>
+            <div><strong>Age:</strong> ${age}</div>
+          `;
+        } else {
+          $('.ris-info').addClass('hiddenDiv');
+          $('.cross').removeClass('hiddenDiv');
+        }
+      }
+    });
+
+    window.stripResponceAPI.onMainMessage((data) => {
+      if (data.type === 'responceEnable') {
+        const { enable } = data.payload;
+        const submitBtn = document.getElementById('submit-btn');
+        const editBtn = document.getElementById('edit-btn');
+        const buttonIds = ['edit-btn', 'send-ris', 'copy-btn', 'download-btn', 'authorize-btn'];
+
+        buttonIds.forEach((id) => {
+          const btn = document.getElementById(id);
+          if (btn) {
+            if (enable) {
+              btn.classList.remove('disabled-btn');
+            } else {
+              btn.classList.add('disabled-btn');
+            }
+          }
+        });
+        submitBtn.classList.add('disabled-btn');
+        editBtn.style.display = '';
+      }
+    });
+  </script>
+</body>
+</html>
