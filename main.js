@@ -17,7 +17,7 @@ function createWindows() {
   });
 
   mainWindow.setTitle('Trexa App');
-  mainWindow.loadURL('http://localhost/primeus/scribe/index');
+  mainWindow.loadURL('https://trexascribe.medreport360.com/login');
 
   mainWindow.on('closed', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
