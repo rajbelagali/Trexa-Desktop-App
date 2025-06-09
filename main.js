@@ -6,7 +6,6 @@ let mainWindow;
 let floatingBar;
 
 function createWindows() {
-  // Create the main window
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -28,16 +27,12 @@ function createWindows() {
     app.quit();
   });
 
-  // Create the floating bar window
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  const barX = 50;
-  const barY = 50;
-
   floatingBar = new BrowserWindow({
     width: 1300,
     height: 300,
-    x: barX,
-    y: barY,
+    x: 50,
+    y: 50,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -58,7 +53,6 @@ function createWindows() {
     floatingBar = null;
   });
 
-  // Handle messages from the floating strip
   ipcMain.on('action-from-strip', (event, data) => {
     if (mainWindow) {
       mainWindow.webContents.send('perform-action', data);
@@ -86,7 +80,7 @@ function createWindows() {
 
   ipcMain.on('trigger-copy', () => {
     if (mainWindow) {
-      mainWindow.focus(); // Ensure main window is focused
+      mainWindow.focus();
       mainWindow.webContents.send('trigger-copy');
     }
   });
@@ -94,16 +88,13 @@ function createWindows() {
   ipcMain.handle('restart_app', () => {
     autoUpdater.quitAndInstall();
   });
-  
 
-  // Utility: Send structured messages to floating bar
   function sendToStrip(data) {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('from-main-to-strip', data);
     }
   }
 
-  // Simulated data update
   setTimeout(() => {
     sendToStrip({
       type: 'updatePatientInfo',
@@ -115,15 +106,36 @@ function createWindows() {
     });
   }, 2000);
 
-  // Auto-updater integration
+  // 🟢 AutoUpdater: Trigger and log events
   mainWindow.webContents.once('did-finish-load', () => {
+    console.log('Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
 
-    autoUpdater.on('update-available', () => {
+    autoUpdater.on('checking-for-update', () => {
+      console.log('Checking for update...');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      console.log('Update available:', info);
       mainWindow.webContents.send('update_available');
     });
 
-    autoUpdater.on('update-downloaded', () => {
+    autoUpdater.on('update-not-available', (info) => {
+      console.log('No updates available:', info);
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.error('Update error:', err);
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent.toFixed(2)}%`;
+      console.log(logMessage);
+      mainWindow.webContents.send('download_progress', progressObj);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('Update downloaded:', info);
       mainWindow.webContents.send('update_downloaded');
     });
   });

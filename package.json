@@ -2,7 +2,7 @@
   "name": "trexaapp",
   "version": "1.0.0",
   "description": "Trexa Electron App",
-  "author": "Your Name",
+  "author": "Raju Belagali",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -18,8 +18,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "your-github-username",
-        "repo": "your-repo-name"
+        "owner": "rajbelagali",
+        "repo": "Trexa-Desktop-App"
       }
     ]
   },
