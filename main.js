@@ -16,7 +16,7 @@ function createWindows() {
     }
   });
 
-  mainWindow.setTitle('Trexa App');
+  mainWindow.setTitle('Trexa App11');
   mainWindow.loadURL('https://trexascribe.medreport360.com/login');
 
   mainWindow.on('closed', () => {
