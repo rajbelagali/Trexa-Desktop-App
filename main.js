@@ -16,8 +16,8 @@ function createWindows() {
     }
   });
 
-  mainWindow.setTitle('Trexa App11');
-  mainWindow.loadURL('http://localhost/primeus/scribe/index');
+  mainWindow.setTitle('Trexa App');
+  mainWindow.loadURL('http://localhost/primeus/scribelogin/login');
 
   mainWindow.on('closed', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
@@ -30,7 +30,7 @@ function createWindows() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   floatingBar = new BrowserWindow({
     width: 1300,
-    height: 350,
+    height:300,
     x: 50,
     y: 50,
     frame: false,
@@ -48,6 +48,7 @@ function createWindows() {
 
   floatingBar.setAlwaysOnTop(true, 'screen-saver');
   floatingBar.loadFile('index.html');
+  // floatingBar.webContents.openDevTools();
 
   floatingBar.on('closed', () => {
     floatingBar = null;
@@ -56,6 +57,13 @@ function createWindows() {
   ipcMain.on('action-from-strip', (event, data) => {
     if (mainWindow) {
       mainWindow.webContents.send('perform-action', data);
+    }
+  });
+
+  ipcMain.on('resize-floating-bar', (event, newHeight) => {
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      const [width] = floatingBar.getSize();
+      floatingBar.setSize(width, newHeight);
     }
   });
 

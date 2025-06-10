@@ -215,9 +215,10 @@
     });
 
     document.addEventListener("click", (event) => {
-      if (tagsInput) {
+      if($(tagsInput).closest('tags').hasClass('tagify--focus') || ($('.tagify--custom-focus').length > 0 && $(event.target).hasClass('tagify__input'))) {
         tagsInput.style.visibility = "visible";
         tagify.DOM.input.placeholder = "Search templates";
+        tagify.DOM.scope.classList.add('tagify--custom-focus');
       }
     });
     // document.addEventListener("click", (event) => {
@@ -229,6 +230,7 @@
     function sendSelectedTemplatesToMainApp() {
       const selectedTemplates = tagify.value.map(tag => tag.name);
       window.floatingAPI.sendSelectedTemplates(selectedTemplates);
+      // tagify.DOM.scope.classList.remove('tagify--custom-focus');
     }
 
     fetch("https://smartmedsolution.com/api/reporttemplate/all")
@@ -244,11 +246,18 @@
     })
     .catch((err) => console.error("Failed to load templates:", err));
 
+    tagify.on("dropdown:show", () => {
+      window.floatingAPI.resizeFloatingBar(300);
+    });
+    tagify.on("dropdown:hide", () => {
+      window.floatingAPI.resizeFloatingBar(0);
+    });
     // tagify.on("dropdown:show", () => {
-    //   window.floatingAPI.resizeFloatingBar(200);
+    //   window.electronAPI.sendToMain({ type: "resize-floating-bar", height: 350 });
     // });
+
     // tagify.on("dropdown:hide", () => {
-    //   window.floatingAPI.resizeFloatingBar(70);
+    //   window.electronAPI.sendToMain({ type: "resize-floating-bar", height: 0 });
     // });
 
     let isDictating = false;

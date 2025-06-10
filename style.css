@@ -300,3 +300,6 @@ tags.tagify.no-drag {
 div.cross {
   color: red !important;
 }
+tags.tagify.no-drag.tagify--noTags.tagify--empty.tagify--custom-focus span {
+  visibility: visible !important;
+}
