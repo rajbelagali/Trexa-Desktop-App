@@ -16,7 +16,7 @@ function createWindows() {
     }
   });
 
-  mainWindow.setTitle('Trexa App');
+  mainWindow.setTitle('Trexa App11');
   mainWindow.loadURL('http://localhost/primeus/scribelogin/login');
 
   mainWindow.on('closed', () => {
