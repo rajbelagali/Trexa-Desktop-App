@@ -17,7 +17,7 @@ function createWindows() {
   });
 
   mainWindow.setTitle('Trexa App11');
-  mainWindow.loadURL('https://trexascribe.medreport360.com/login');
+  mainWindow.loadURL('http://localhost/primeus/scribe/index');
 
   mainWindow.on('closed', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
@@ -30,7 +30,7 @@ function createWindows() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   floatingBar = new BrowserWindow({
     width: 1300,
-    height: 300,
+    height: 350,
     x: 50,
     y: 50,
     frame: false,
