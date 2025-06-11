@@ -31,10 +31,10 @@ function createWindows() {
   });
 
   floatingBar = new BrowserWindow({
-    width: 1300,
+    width: width,
     height: 300,
-    x: 50,
-    y: 50,
+    x: 10,
+    y: 10,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
