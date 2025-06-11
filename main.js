@@ -48,7 +48,6 @@ function createWindows() {
 
   floatingBar.setAlwaysOnTop(true, 'screen-saver');
   floatingBar.loadFile('index.html');
-  // floatingBar.webContents.openDevTools();
 
   floatingBar.on('closed', () => {
     floatingBar = null;
@@ -146,6 +145,9 @@ function createWindows() {
       console.log('Update downloaded:', info);
       mainWindow.webContents.send('update_downloaded');
     });
+
+    // mainWindow.webContents.openDevTools();
+
   });
 }
 
