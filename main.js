@@ -1,14 +1,17 @@
 const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
+const { clipboard } = require('electron');
 
 let mainWindow;
 let floatingBar;
 
 function createWindows() {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
+    width,
+    height,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -27,10 +30,9 @@ function createWindows() {
     app.quit();
   });
 
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   floatingBar = new BrowserWindow({
     width: 1300,
-    height:300,
+    height: 300,
     x: 50,
     y: 50,
     frame: false,
@@ -58,7 +60,9 @@ function createWindows() {
       mainWindow.webContents.send('perform-action', data);
     }
   });
-
+  ipcMain.on('copy-to-clipboard', (_, text) => {
+    clipboard.writeText(text || '');
+  });
   ipcMain.on('resize-floating-bar', (event, newHeight) => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       const [width] = floatingBar.getSize();
@@ -69,13 +73,6 @@ function createWindows() {
   ipcMain.on('selected-templates-from-strip', (event, templates) => {
     if (mainWindow) {
       mainWindow.webContents.send('templates-selected', templates);
-    }
-  });
-
-  ipcMain.on('resize-floating-bar', (event, newHeight) => {
-    if (floatingBar && !floatingBar.isDestroyed()) {
-      const [width] = floatingBar.getSize();
-      floatingBar.setSize(width, newHeight);
     }
   });
 
@@ -147,7 +144,6 @@ function createWindows() {
     });
 
     // mainWindow.webContents.openDevTools();
-
   });
 }
 
