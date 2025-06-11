@@ -289,6 +289,13 @@
           btn.classList.add('disabled-btn');
         }
       });
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        const label = submitBtn.querySelector('label');
+        if (label) {
+          label.textContent = 'Re submit';
+        }
+      }
     }
 
     $(document).ready(function () {
