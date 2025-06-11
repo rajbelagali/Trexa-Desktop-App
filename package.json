@@ -1,6 +1,6 @@
 {
   "name": "trexaapp",
-  "version": "1.0.9",
+  "version": "1.0.8",
   "description": "Trexa Electron App",
   "author": "Raju Belagali",
   "main": "main.js",
@@ -11,23 +11,21 @@
   "build": {
     "appId": "com.trexa.trexaapp",
     "productName": "Trexa",
-    "artifactName": "Trexa-${version}.exe",
     "win": {
       "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ]
+    },
+    "portable": {
+      "artifactName": "Trexa-${version}.exe"
     },
     "nsis": {
       "oneClick": false,
