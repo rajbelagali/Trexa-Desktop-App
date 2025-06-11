@@ -1,6 +1,6 @@
 {
   "name": "trexaapp",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Trexa Electron App",
   "author": "Raju Belagali",
   "main": "main.js",
@@ -16,11 +16,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
