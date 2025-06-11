@@ -11,20 +11,17 @@
   "build": {
     "appId": "com.trexa.trexaapp",
     "productName": "Trexa",
+    "artifactName": "Trexa-${version}.exe",
     "win": {
       "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ]
     },
