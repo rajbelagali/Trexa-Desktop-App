@@ -220,8 +220,8 @@ function startTelnetServer() {
     });
   });
 
-  server.listen(2323, () => {
-    console.log('✅ Telnet server listening on port 2323');
+  server.listen(13689, () => {
+    console.log('Telnet server listening on port 13689');
   });
 }
 
