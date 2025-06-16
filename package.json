@@ -1,6 +1,6 @@
 {
   "name": "trexaapp",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Trexa Electron App",
   "author": "Raju Belagali",
   "main": "main.js",
