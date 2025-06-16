@@ -22,8 +22,8 @@ function createWindows(initialAccession = null) {
   mainWindow.setTitle('Trexa App');
 
   const targetURL = initialAccession
-    ? `https://smartmedsolution.com/worksheets/scribe/index?ano=${initialAccession}`
-    : 'https://smartmedsolution.com/login';
+    ? `https://trexascribe.medreport360.com/worksheets/scribe/index?ano=${initialAccession}`
+    : 'https://trexascribe.medreport360.com/login';
 
   mainWindow.loadURL(targetURL);
 
@@ -196,7 +196,7 @@ function startTelnetServer() {
           if (input.startsWith('OPEN')) {
             const accession = input.split(' ')[1].trim();
 
-            const url = `https://smartmedsolution.com/worksheets/scribe/index?ano=${accession}`;
+            const url = `https://trexascribe.medreport360.com/worksheets/scribe/index?ano=${accession}`;
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.loadURL(url);
             } else {
