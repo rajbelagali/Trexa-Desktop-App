@@ -12,6 +12,7 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css"
   />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <style>
     /* .tagify__tag {
       display: none !important;
@@ -41,6 +42,32 @@
         opacity: 1;
       }
     }
+    .select2-hidden-accessible {
+        border: 0 !important;
+        clip: rect(0 0 0 0) !important;
+        -webkit-clip-path: inset(50%) !important;
+        clip-path: inset(50%) !important;
+        height: auto !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        position: absolute !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+    }
+    .select2-container {
+        box-sizing: border-box;
+        display: inline-block;
+        margin: 0;
+        position: relative;
+        vertical-align: middle;
+        width: 200px !important;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+        color: #000;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+      color: #000;
+    }
   </style>
 </head>
 <body>
@@ -57,12 +84,10 @@
     </div>
   
     <!-- Template search -->
-    <input
-      id="templateSearch"
-      class="no-drag"
-      placeholder="Search templates"
-      autocomplete="off"
-    />
+    <div style="position:relative;">
+      <select id="template-select" multiple="multiple" style="width: 30px;"></select>
+    </div>
+    
     <div id="selectedCountDisplay" class="selected-counter" onclick="showSelectedTags()" style="display: none; cursor: pointer;">
       0 
     </div>
@@ -129,106 +154,40 @@
   <script src="renderer.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  
   <script>
-    const input = document.getElementById("templateSearch");
-
-    const tagify = new Tagify(input, {
-      whitelist: [],
-      enforceWhitelist: true,
-      dropdown: {
-        enabled: 1,
-        maxItems: 15,
-        closeOnSelect: false,
-        position: "input",
-        highlightFirst: true,
-      },
-      editTags: false,
-      duplicates: false,
-    });
-
+    
     let selectedTagCount = 0;
-    const tagsInput = document.getElementsByClassName("tagify__input")[0];
-
+    
     function updateCounter() {
-      selectedTagCount = tagify.value.length;
+      selectedTagCount = $('#template-select').select2().val().length;
       const counterDisplay = document.getElementById("selectedCountDisplay");
-      tagsInput.style.visibility = "hidden";
-
+    
       if (selectedTagCount > 0) {
         counterDisplay.textContent = `${selectedTagCount}`;
         counterDisplay.style.display = "inline-block";
         counterDisplay.style.cursor = "pointer";
 
-        // Set placeholder only if needed
-        tagify.DOM.input.placeholder = "Search templates";
-        tagify.DOM.input.setAttribute("readonly", true);
       } else {
         counterDisplay.style.display = "none";
-
-        tagify.DOM.input.placeholder = "Search templates";
-        tagify.DOM.input.removeAttribute("readonly");
       }
     }
-
-    function showSelectedTags() {
-      tagify.dropdown.show();
-      setTimeout(() => {
-        const selectedValues = tagify.value.map(tag => tag.value.toLowerCase());
-        const items = tagify.DOM.dropdown.querySelectorAll(".tagify__dropdown__item");
-
-        let firstMatchEl = null;
-
-        items.forEach(el => {
-          const label = el.textContent.trim().toLowerCase();
-
-          if (selectedValues.includes(label)) {
-            el.classList.add("highlighted-item");
-            if (!firstMatchEl) firstMatchEl = el;
-          } else {
-            el.classList.remove("highlighted-item");
-          }
-        });
-
-        if (firstMatchEl) {
-          firstMatchEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-      }, 100);
-    }
-
-    tagify.on("change", updateCounter);
-    tagify.on("dropdown:select", () => {
-      tagsInput.style.visibility = "visible";
-      $('.tagify__dropdown').remove();
-
-      setTimeout(() => {
-        sendSelectedTemplatesToMainApp();
-      }, 50);
-    });
-    tagify.on("remove", () => {
-      setTimeout(() => {
-        sendSelectedTemplatesToMainApp();
-      }, 50);
-    });
-    input.addEventListener("blur", () => {
-      setTimeout(updateCounter, 100);
-    });
-
-    document.addEventListener("click", (event) => {
-      if($(tagsInput).closest('tags').hasClass('tagify--focus') || ($('.tagify--custom-focus').length > 0 && $(event.target).hasClass('tagify__input'))) {
-        tagsInput.style.visibility = "visible";
-        tagify.DOM.input.placeholder = "Search templates";
-        tagify.DOM.scope.classList.add('tagify--custom-focus');
-      }
-    });
-    // document.addEventListener("click", (event) => {
-    //   const isInside = tagify.DOM.scope.contains(event.target) || event.target.id === "selectedCountDisplay";
-    //   if (!isInside) {
-    //     setTimeout(updateCounter, 100);
-    //   }
+    // $('#template-select').on('select2:select', function (e) {
+    //   const selectedItem = e.params.data;
+    //   setTimeout(() => {
+    //     sendSelectedTemplatesToMainApp();
+    //   }, 50);
     // });
+    // $('#template-select').on('select2:unselect', function (e) {
+    //   const removedItem = e.params.data;
+    //   setTimeout(() => {
+    //     sendSelectedTemplatesToMainApp();
+    //   }, 50);
+    // });
+
     function sendSelectedTemplatesToMainApp() {
-      const selectedTemplates = tagify.value.map(tag => tag.name);
+      const selectedTemplates = $('#template-select').select2().val();
       window.floatingAPI.sendSelectedTemplates(selectedTemplates);
       // tagify.DOM.scope.classList.remove('tagify--custom-focus');
     }
@@ -239,26 +198,33 @@
       const templateNames = data
         .filter((item) => item.templateName)
         .map((item, index) => ({
-          value: item.templateName,  // keep actual value
-          name: item.id, // display label
+          value: item.id,  // keep actual value
+          name: item.templateName, // display label
         }));
-      tagify.whitelist = templateNames;
+        const select = document.getElementById("template-select");
+
+        // Clear old options
+        select.innerHTML = "";
+
+        // Append new options
+        templateNames.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.value;
+          option.textContent = item.name;
+          select.appendChild(option);
+        });
+
+        // Re-initialize Select2 if already initialized
+        if ($(select).hasClass("select2-hidden-accessible")) {
+          $(select).select2('destroy');
+        }
+
+        $(select).select2({
+          placeholder: "Select templates",
+        });
+        window.floatingAPI.collapse();
     })
     .catch((err) => console.error("Failed to load templates:", err));
-
-    tagify.on("dropdown:show", () => {
-      window.floatingAPI.resizeFloatingBar(300);
-    });
-    tagify.on("dropdown:hide", () => {
-      window.floatingAPI.resizeFloatingBar(0);
-    });
-    // tagify.on("dropdown:show", () => {
-    //   window.electronAPI.sendToMain({ type: "resize-floating-bar", height: 350 });
-    // });
-
-    // tagify.on("dropdown:hide", () => {
-    //   window.electronAPI.sendToMain({ type: "resize-floating-bar", height: 0 });
-    // });
 
     let isDictating = false;
 
@@ -378,6 +344,31 @@
         submitBtn.classList.add('disabled-btn');
         editBtn.style.display = '';
       }
+    });
+  </script>
+  <script>
+    $(document).ready(function () {
+      $('#template-select').select2({
+        placeholder: "Select Template",
+        allowClear: true
+      });
+  
+      $('#template-select').on('change', function () {
+        const selectedValues = $(this).val(); // Array of selected values
+        console.log('Selected:', selectedValues);
+        updateCounter();
+        window.floatingAPI.collapse();
+        setTimeout(() => {
+          sendSelectedTemplatesToMainApp();
+      }, 50);
+      });
+    });
+    $('#template-select').on('select2:open', function () {
+      window.floatingAPI.expand();
+    });
+
+    $('#template-select').on('select2:close', function () {
+      window.floatingAPI.collapse();
     });
   </script>
 </body>

@@ -7,7 +7,9 @@ contextBridge.exposeInMainWorld('stripAPI', {
 });
 contextBridge.exposeInMainWorld('floatingAPI', {
   resizeFloatingBar: (height) => ipcRenderer.send('resize-floating-bar', height),
-  sendSelectedTemplates: (templates) => ipcRenderer.send('selected-templates-from-strip', templates)
+  sendSelectedTemplates: (templates) => ipcRenderer.send('selected-templates-from-strip', templates),
+  expand: () => ipcRenderer.send('expand-floating-bar'),
+  collapse: () => ipcRenderer.send('collapse-floating-bar')
 });
 contextBridge.exposeInMainWorld('stripMainAPI', {
   onMainMessage: (callback) => {

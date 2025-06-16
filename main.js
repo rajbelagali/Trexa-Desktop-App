@@ -1,12 +1,12 @@
-const { app, BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, clipboard } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
-const { clipboard } = require('electron');
+const net = require('net');
 
 let mainWindow;
 let floatingBar;
 
-function createWindows() {
+function createWindows(initialAccession = null) {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
@@ -20,7 +20,12 @@ function createWindows() {
   });
 
   mainWindow.setTitle('Trexa App');
-  mainWindow.loadURL('https://trexascribe.medreport360.com/login');
+
+  const targetURL = initialAccession
+    ? `https://smartmedsolution.com/worksheets/scribe/index?ano=${initialAccession}`
+    : 'https://smartmedsolution.com/login';
+
+  mainWindow.loadURL(targetURL);
 
   mainWindow.on('closed', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
@@ -32,7 +37,7 @@ function createWindows() {
 
   floatingBar = new BrowserWindow({
     width: width,
-    height: 300,
+    height: 60,
     x: 10,
     y: 10,
     frame: false,
@@ -50,26 +55,34 @@ function createWindows() {
 
   floatingBar.setAlwaysOnTop(true, 'screen-saver');
   floatingBar.loadFile('index.html');
-
+  // floatingBar.webContents.openDevTools();
   floatingBar.on('closed', () => {
     floatingBar = null;
   });
-
+ 
   ipcMain.on('action-from-strip', (event, data) => {
     if (mainWindow) {
       mainWindow.webContents.send('perform-action', data);
     }
   });
+
   ipcMain.on('copy-to-clipboard', (_, text) => {
     clipboard.writeText(text || '');
   });
+
   ipcMain.on('resize-floating-bar', (event, newHeight) => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       const [width] = floatingBar.getSize();
       floatingBar.setSize(width, newHeight);
     }
   });
-
+  ipcMain.on('expand-floating-bar', () => {
+    animateHeight(300);
+  });
+  
+  ipcMain.on('collapse-floating-bar', () => {
+    animateHeight(60);
+  });
   ipcMain.on('selected-templates-from-strip', (event, templates) => {
     if (mainWindow) {
       mainWindow.webContents.send('templates-selected', templates);
@@ -110,7 +123,6 @@ function createWindows() {
     });
   }, 2000);
 
-  // 🟢 AutoUpdater: Trigger and log events
   mainWindow.webContents.once('did-finish-load', () => {
     console.log('Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
@@ -142,12 +154,81 @@ function createWindows() {
       console.log('Update downloaded:', info);
       mainWindow.webContents.send('update_downloaded');
     });
+  });
+}
+function animateHeight(targetHeight) {
+  if (!floatingBar || floatingBar.isDestroyed()) return;
 
-    // mainWindow.webContents.openDevTools();
+  const { x, y } = floatingBar.getBounds();
+  let { width, height } = floatingBar.getBounds();
+
+  const step = targetHeight > height ? 10 : -10;
+
+  const interval = setInterval(() => {
+    height += step;
+
+    floatingBar.setBounds({ x, y, width, height });
+
+    if ((step > 0 && height >= targetHeight) || (step < 0 && height <= targetHeight)) {
+      floatingBar.setBounds({ x, y, width, height: targetHeight });
+      clearInterval(interval);
+    }
+  }, 10); // speed of animation
+}
+function startTelnetServer() {
+  const server = net.createServer((socket) => {
+    console.log(`Telnet client connected: ${socket.remoteAddress}:${socket.remotePort}`);
+    socket.write('Welcome to the Trexa Telnet Server\r\n');
+
+    let buffer = '';
+
+    socket.on('data', (data) => {
+      buffer += data.toString();
+
+      if (buffer.includes('\n')) {
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop(); // Save any partial line
+
+        for (let line of lines) {
+          const input = line.trim();
+          console.log('Received from Telnet:', input);
+
+          if (input.startsWith('OPEN')) {
+            const accession = input.split(' ')[1].trim();
+
+            const url = `https://smartmedsolution.com/worksheets/scribe/index?ano=${accession}`;
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.loadURL(url);
+            } else {
+              createWindows(accession);
+            }
+            // mainWindow.webContents.openDevTools();
+            socket.write(`Loading accession ${accession}...\r\n`);
+          } else {
+            socket.write('Invalid command. Use ACCESSION:<number>\r\n');
+          }
+        }
+      }
+    });
+
+    socket.on('end', () => {
+      console.log('Telnet client disconnected');
+    });
+
+    socket.on('error', (err) => {
+      console.error('Telnet socket error:', err);
+    });
+  });
+
+  server.listen(2323, () => {
+    console.log('✅ Telnet server listening on port 2323');
   });
 }
 
-app.whenReady().then(createWindows);
+app.whenReady().then(() => {
+  createWindows();
+  startTelnetServer();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
