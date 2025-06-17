@@ -70,6 +70,12 @@ function createWindows(initialAccession = null) {
     clipboard.writeText(text || '');
   });
 
+  ipcMain.on('stripe-copy-request', (event) => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.send('perform-copy-summernote');
+    }
+  });
+
   ipcMain.on('resize-floating-bar', (event, newHeight) => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       const [width] = floatingBar.getSize();

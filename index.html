@@ -120,7 +120,7 @@
     </div>
   
     <!-- Copy -->
-    <div class="button disabled-btn" id="copy-btn" onclick="window.electronAPI.copyToClipboard(text)">
+    <div class="button disabled-btn" id="copy-btn">
       <span><i class="fas fa-copy"></i></span>
       <label>Copy</label>
     </div>
@@ -369,6 +369,21 @@
 
     $('#template-select').on('select2:close', function () {
       window.floatingAPI.collapse();
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      const copyBtn = document.getElementById('copy-btn');
+      if (copyBtn && window.stripeAPI) {
+        copyBtn.addEventListener('click', () => {
+          window.stripeAPI.requestCopy();
+        });
+
+        window.stripeAPI.onPerformCopy(() => {
+          console.log('Copy triggered from main');
+          // You can call your copy handler here if needed
+        });
+      } else {
+        console.warn('stripeAPI or copyBtn not found');
+      }
     });
   </script>
 </body>

@@ -5,6 +5,10 @@ contextBridge.exposeInMainWorld('stripAPI', {
       ipcRenderer.send('action-from-strip', data);
   }
 });
+contextBridge.exposeInMainWorld('stripeAPI', {
+  requestCopy: () => ipcRenderer.send('trigger-copy'),
+  onPerformCopy: (callback) => ipcRenderer.on('trigger-copy', (_, data) => callback(data))
+});
 contextBridge.exposeInMainWorld('floatingAPI', {
   resizeFloatingBar: (height) => ipcRenderer.send('resize-floating-bar', height),
   sendSelectedTemplates: (templates) => ipcRenderer.send('selected-templates-from-strip', templates),
