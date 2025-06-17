@@ -2,7 +2,7 @@ html, body {
   margin: 0;
   padding: 0;
   background: transparent; 
-  border-radius: 16px;     
+  border-radius: 0px;     
   overflow: hidden;       
   width: 100%;
   height: 100%;
@@ -17,7 +17,7 @@ html, body {
   height: 65px;
   padding: 8px 12px;
   margin: 2px auto;
-  border-radius: 16px;
+  border-radius: 0px;
   /* border: 1px solid red; */  /* remove debug line */
   color: white;
   gap: 12px;

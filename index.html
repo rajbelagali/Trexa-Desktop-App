@@ -76,11 +76,20 @@
     <div id="logoBtn">
       <img src="assets/img/l44_2.png" class="img-class" />
     </div>
-  
+     <!-- Patient Information -->
+     <div class="patient-info ris-info hiddenDiv">
+      <div><strong>Name:</strong> John Doe</div>
+      <div><strong>DOB:</strong> 1990-05-15</div>
+      <div><strong>Age:</strong> 35</div>
+    </div>
     <!-- Timer -->
     <div class="button">
       <span><i class="fas fa-stopwatch"></i></span>
       <label id="timer-display">00:00</label>
+    </div>
+    <div class="button" id="new-session" onclick="newSession()">
+      <span><i class="fas fa-plus"></i></span>
+      <label id="new-session">New Session</label>
     </div>
   
     <!-- Template search -->
@@ -92,13 +101,7 @@
       0 
     </div>
   
-    <!-- Patient Information -->
-    <div class="patient-info ris-info hiddenDiv">
-      <div><strong>Name:</strong> John Doe</div>
-      <div><strong>DOB:</strong> 1990-05-15</div>
-      <div><strong>Age:</strong> 35</div>
-    </div>
-  
+   
     <!-- ✅ Tick Mark -->
     <div id="statusTick" class="status-tick hiddenDiv right" title="Ready">
       <i class="fas fa-check-circle"></i>
@@ -245,7 +248,10 @@
       }
       document.getElementById("dictateBtn").classList.toggle("stopClass");
     }
-
+    function newSession() {
+      $('#template-select').select2().val(['78']).trigger('change');
+      window.stripAPI.triggerMainAction('new-session');
+    }
     function renableSubmit() {
       window.stripAPI.triggerMainAction('edit-btn');
       const buttonIds = ['edit-btn', 'send-ris', 'copy-btn', 'download-btn', 'authorize-btn'];
@@ -372,14 +378,31 @@
     });
     document.addEventListener('DOMContentLoaded', () => {
       const copyBtn = document.getElementById('copy-btn');
+      const copyLabel = copyBtn?.querySelector('label');
+      const copyIcon = copyBtn?.querySelector('i');
+
       if (copyBtn && window.stripeAPI) {
         copyBtn.addEventListener('click', () => {
           window.stripeAPI.requestCopy();
+
+          if (copyLabel && copyIcon) {
+            // Change to "Copied" and checkmark icon
+            copyLabel.textContent = 'Copied';
+            copyIcon.classList.remove('fa-copy');
+            copyIcon.classList.add('fa-check');
+
+            // Reset after 10 seconds
+            setTimeout(() => {
+              copyLabel.textContent = 'Copy';
+              copyIcon.classList.remove('fa-check');
+              copyIcon.classList.add('fa-copy');
+            }, 10000);
+          }
         });
 
         window.stripeAPI.onPerformCopy(() => {
           console.log('Copy triggered from main');
-          // You can call your copy handler here if needed
+          // You can optionally trigger UI update from here too
         });
       } else {
         console.warn('stripeAPI or copyBtn not found');

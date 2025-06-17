@@ -12,6 +12,8 @@ function createWindows(initialAccession = null) {
   mainWindow = new BrowserWindow({
     width,
     height,
+    x: 0,
+    y: 68,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
