@@ -17,6 +17,7 @@ function createWindows(initialAccession = null) {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
+      sandbox: false, 
       contextIsolation: true,
     }
   });

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, clipboard } = require('electron');
 
 contextBridge.exposeInMainWorld('mainAPI', {
   onAction: (callback) => ipcRenderer.on('perform-action', (_, data) => callback(data)),
@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateDownloaded: (callback) => ipcRenderer.on('update_downloaded', callback),
 
   restartApp: () => ipcRenderer.send('restart_app'),
+  writeClipboardHtml: (html, plain) => {
+    clipboard.write({
+      html: html,
+      text: plain,
+    });
+  },
 
   copyToClipboard: (text) => ipcRenderer.send('copy-to-clipboard', text)
 });

@@ -248,9 +248,16 @@
       }
       document.getElementById("dictateBtn").classList.toggle("stopClass");
     }
+    function resetDictate() {
+      const icon = document.querySelector("#dictateIcon i");
+      const label = document.getElementById("dictateLabel");
+      icon.className = "fas fa-microphone";
+      label.textContent = "Dictate";
+      document.getElementById("dictateBtn").classList.remove("stopClass");
+    }
     function newSession() {
+      window.stripAPI.triggerMainAction("new-session");
       $('#template-select').select2().val(['78']).trigger('change');
-      window.stripAPI.triggerMainAction('new-session');
     }
     function renableSubmit() {
       window.stripAPI.triggerMainAction('edit-btn');
@@ -336,7 +343,9 @@
         const submitBtn = document.getElementById('submit-btn');
         const editBtn = document.getElementById('edit-btn');
         const buttonIds = ['edit-btn', 'send-ris', 'copy-btn', 'download-btn', 'authorize-btn'];
-
+        if($('#dictateBtn').find('.fa-microphone').length == 0) {
+          resetDictate();
+        }
         buttonIds.forEach((id) => {
           const btn = document.getElementById(id);
           if (btn) {
@@ -407,6 +416,45 @@
       } else {
         console.warn('stripeAPI or copyBtn not found');
       }
+    });
+    let ctrlPressed = false;
+    let altPressed = false;
+    let shiftPressed = false;
+
+    $(document).keydown(function (e) {
+      // if (e.ctrlKey && e.altKey && e.originalEvent.code === 'KeyY' && !getReportInProgress) {
+      //   e.preventDefault(); // Optional: prevent default browser behavior
+      //   $('.save-btn').click(); // Trigger the button click
+      // }
+
+      if (e.key === "Control") ctrlPressed = true;
+      if (e.key === "Alt") altPressed = true;
+      if (e.key === "Shift") shiftPressed = true;
+
+      if (ctrlPressed && altPressed && shiftPressed && e.originalEvent.code === 'KeyY') {
+        e.preventDefault();
+        $('#submit-btn').trigger('click');
+      }
+
+      if (ctrlPressed && altPressed && shiftPressed && e.originalEvent.code === 'KeyZ') {
+        e.preventDefault();
+        $('#copy-btn').trigger('click'); 
+      }
+      if (ctrlPressed && altPressed && shiftPressed && e.originalEvent.code === 'KeyW') {
+        e.preventDefault();
+        $('#new-session').trigger('click');
+        $('#template-select').select2().val(['78']).trigger('change');
+      }
+      if (ctrlPressed && altPressed && shiftPressed && e.originalEvent.code === 'KeyX') {
+        e.preventDefault();
+        $('#dictateBtn').trigger('click'); 
+      }
+    });
+
+    $(document).keyup(function (e) {
+      if (e.key === "Control") ctrlPressed = false;
+      if (e.key === "Alt") altPressed = false;
+      if (e.key === "Shift") shiftPressed = false;
     });
   </script>
 </body>
