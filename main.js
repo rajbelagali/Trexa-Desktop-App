@@ -45,7 +45,7 @@ function createWindows(initialAccession = null) {
     }
   });
 
-  mainWindow.setTitle('Trexa App');
+  mainWindow.setTitle('Trexa App 11');
 
   const targetURL = initialAccession
     ? `https://trexascribe.medreport360.com/worksheets/scribe/index?ano=${initialAccession}`
