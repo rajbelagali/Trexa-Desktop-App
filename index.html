@@ -162,7 +162,17 @@
   <script>
     
     let selectedTagCount = 0;
-    
+    const display = document.getElementById('timer-display');
+    let startTime = Date.now();
+    function updateTimerDisplay() {
+      const elapsed = Date.now() - startTime;
+      const minutes = Math.floor(elapsed / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+      const padded = (n) => String(n).padStart(2, '0');
+      display.textContent = `${padded(minutes)}:${padded(seconds)}`;
+    }
+
+    setInterval(updateTimerDisplay, 1000);
     function updateCounter() {
       selectedTagCount = $('#template-select').select2().val().length;
       const counterDisplay = document.getElementById("selectedCountDisplay");
@@ -257,6 +267,9 @@
     }
     function newSession() {
       window.stripAPI.triggerMainAction("new-session");
+      const display = document.getElementById('timer-display');
+      startTime = Date.now();          // reset the timer
+      updateTimerDisplay();            // force UI to update immediately
       $('#template-select').select2().val(['78']).trigger('change');
     }
     function renableSubmit() {
@@ -278,17 +291,7 @@
     }
 
     $(document).ready(function () {
-      let startTime = Date.now();
-      const display = document.getElementById('timer-display');
-
-      setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const minutes = Math.floor(elapsed / 60000);
-        const seconds = Math.floor((elapsed % 60000) / 1000);
-        const padded = (n) => String(n).padStart(2, '0');
-        display.textContent = `${padded(minutes)}:${padded(seconds)}`;
-      }, 1000);
-
+     
       window.stripMainAPI.onMainMessage((data) => {
         if (data.type === 'updatePatientInfo') {
           const { name, dob, age } = data.payload;
