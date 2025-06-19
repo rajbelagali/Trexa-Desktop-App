@@ -10,8 +10,9 @@ let updateWindow = null;
 function createUpdateWindow(info = {}) {
   updateWindow = new BrowserWindow({
     width: 450,
-    height: 450,
+    height: 490,
     frame: false,
+    transparent: true,
     alwaysOnTop: true,
     modal: true,
     resizable: false,
@@ -148,7 +149,7 @@ function createWindows(initialAccession = null) {
   mainWindow.webContents.once('did-finish-load', () => {
     console.log('Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
-
+    
     autoUpdater.on('checking-for-update', () => {
       console.log('Checking for update...');
     });
