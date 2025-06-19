@@ -1,47 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Updating...</title>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.4rem;
       text-align: center;
+      color: #2c3e50;
     }
-    #progress-bar {
+
+    #version {
+      font-weight: bold;
+      font-size: 1.1rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    #release-date {
+      font-size: 0.9rem;
+      color: #888;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #status {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar {
       width: 100%;
-      height: 20px;
-      background: #eee;
-      margin-top: 20px;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 16px;
+      margin-bottom: 10px;
     }
-    #progress {
+
+    .progress {
       height: 100%;
-      background: #4caf50;
+      background-color: #4caf50;
       width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    #percent {
+      text-align: right;
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .changelog {
+      font-size: 0.9rem;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+      height: 80px;
+      overflow-y: auto;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: 15px;
+    }
+    .img-class {
+        height: 100px;
+        width: 100px;
+        object-fit: contain;
+        text-align: center;
+        width: 80%;
+    }
+    #logoBtn {
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h3>Update in Progress</h3>
-  <p id="status">Downloading update, please wait...</p>
-  <div id="progress-bar">
-    <div id="progress"></div>
+  <div class="container">
+    <div id="logoBtn">
+      <img src="assets/img/l44_1.png" class="img-class" />
+    </div>
+    <div id="version">v0.0.0</div>
+    <div id="release-date">--</div>
+    <div id="status">Downloading update, please wait...</div>
+    <div class="progress-bar"><div id="progress" class="progress"></div></div>
+    <div id="percent">0%</div>
+    <div class="changelog" id="changelog">Loading changelog...</div>
+    <div class="footer-note">Do not close the application.</div>
   </div>
-  <p id="percent">0%</p>
-</body>
-</html>
-<script>
+
+  <script>
     window.updateAPI.onProgress((progress) => {
-      const percent = progress.percent.toFixed(2);
+      const percent = progress.percent.toFixed(1);
       document.getElementById('progress').style.width = `${percent}%`;
       document.getElementById('percent').innerText = `${percent}%`;
     });
-  
+
     window.updateAPI.onDownloaded(() => {
       document.getElementById('status').innerText = 'Update downloaded. Restarting...';
       setTimeout(() => {
         window.location.href = 'about:blank';
-        window.updateAPI.restartApp(); // make sure this is exposed
-      }, 1000);
+        window.updateAPI.restartApp();
+      }, 1200);
+    });
+
+    window.updateAPI.onInfo((info) => {
+      document.getElementById('version').innerText = `Version: ${info.version}`;
+      document.getElementById('release-date').innerText = `Released: ${new Date(info.date).toLocaleDateString()}`;
+      document.getElementById('changelog').innerText = info.notes || 'No release notes provided.';
     });
   </script>
+</body>
+</html>
