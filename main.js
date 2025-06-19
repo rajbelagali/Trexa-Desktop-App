@@ -10,7 +10,7 @@ let updateWindow = null;
 function createUpdateWindow(info = {}) {
   updateWindow = new BrowserWindow({
     width: 450,
-    height: 490,
+    height: 500,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -149,7 +149,14 @@ function createWindows(initialAccession = null) {
   mainWindow.webContents.once('did-finish-load', () => {
     console.log('Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
-    
+
+    // setTimeout(() => {
+    //   createUpdateWindow({
+    //     version: 'v1.2.3',
+    //     releaseNotes: '• Bug fixes\n• Performance improvements\n• UI tweaks',
+    //     releaseDate: new Date().toISOString()
+    //   });
+    // }, 3000);
     autoUpdater.on('checking-for-update', () => {
       console.log('Checking for update...');
     });
