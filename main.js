@@ -5,9 +5,32 @@ const net = require('net');
 
 let mainWindow;
 let floatingBar;
-
+let updateWindow = null;
 function createWindows(initialAccession = null) {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+  updateWindow = new BrowserWindow({
+    width: 400,
+    height: 200,
+    frame: false,
+    alwaysOnTop: true,
+    modal: true,
+    resizable: false,
+    closable: false,
+    movable: true,
+    show: false,
+    parent: mainWindow,
+    webPreferences: {
+      preload: path.join(__dirname, 'update-preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  updateWindow.loadFile('update.html');
+  updateWindow.once('ready-to-show', () => {
+    updateWindow.show();
+  });
 
   mainWindow = new BrowserWindow({
     width,
@@ -140,9 +163,11 @@ function createWindows(initialAccession = null) {
       console.log('Checking for update...');
     });
 
-    autoUpdater.on('update-available', (info) => {
-      console.log('Update available:', info);
-      mainWindow.webContents.send('update_available');
+    autoUpdater.on('update-available', () => {
+      if (mainWindow) {
+        mainWindow.setEnabled(false); // ⛔ Disable interaction with the app
+      }
+      createUpdateWindow();
     });
 
     autoUpdater.on('update-not-available', (info) => {
@@ -153,15 +178,19 @@ function createWindows(initialAccession = null) {
       console.error('Update error:', err);
     });
 
-    autoUpdater.on('download-progress', (progressObj) => {
-      const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent.toFixed(2)}%`;
-      console.log(logMessage);
-      mainWindow.webContents.send('download_progress', progressObj);
+    autoUpdater.on('download-progress', (progress) => {
+      if (updateWindow && updateWindow.webContents) {
+        updateWindow.webContents.send('download_progress', progress);
+      }
     });
 
-    autoUpdater.on('update-downloaded', (info) => {
-      console.log('Update downloaded:', info);
-      mainWindow.webContents.send('update_downloaded');
+    autoUpdater.on('update-downloaded', () => {
+      if (updateWindow && updateWindow.webContents) {
+        updateWindow.webContents.send('update_downloaded');
+      }
+      if (mainWindow) {
+        mainWindow.setEnabled(true); // Optional, re-enable interaction if needed
+      }
     });
   });
 }

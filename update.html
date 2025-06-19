@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Updating...</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #eee;
+      margin-top: 20px;
+    }
+    #progress {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+    }
+  </style>
+</head>
+<body>
+  <h3>Update in Progress</h3>
+  <p id="status">Downloading update, please wait...</p>
+  <div id="progress-bar">
+    <div id="progress"></div>
+  </div>
+  <p id="percent">0%</p>
+</body>
+</html>
+<script>
+    window.updateAPI.onProgress((progress) => {
+      const percent = progress.percent.toFixed(2);
+      document.getElementById('progress').style.width = `${percent}%`;
+      document.getElementById('percent').innerText = `${percent}%`;
+    });
+  
+    window.updateAPI.onDownloaded(() => {
+      document.getElementById('status').innerText = 'Update downloaded. Restarting...';
+      setTimeout(() => {
+        window.location.href = 'about:blank';
+        window.updateAPI.restartApp(); // make sure this is exposed
+      }, 1000);
+    });
+  </script>
