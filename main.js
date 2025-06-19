@@ -6,9 +6,8 @@ const net = require('net');
 let mainWindow;
 let floatingBar;
 let updateWindow = null;
-function createWindows(initialAccession = null) {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
+function createUpdateWindow() {
   updateWindow = new BrowserWindow({
     width: 400,
     height: 200,
@@ -31,6 +30,10 @@ function createWindows(initialAccession = null) {
   updateWindow.once('ready-to-show', () => {
     updateWindow.show();
   });
+}
+
+function createWindows(initialAccession = null) {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
     width,
@@ -40,7 +43,7 @@ function createWindows(initialAccession = null) {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      sandbox: false, 
+      sandbox: false,
       contextIsolation: true,
     }
   });
@@ -81,71 +84,53 @@ function createWindows(initialAccession = null) {
 
   floatingBar.setAlwaysOnTop(true, 'screen-saver');
   floatingBar.loadFile('index.html');
-  // floatingBar.webContents.openDevTools();
   floatingBar.on('closed', () => {
     floatingBar = null;
   });
- 
-  ipcMain.on('action-from-strip', (event, data) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('perform-action', data);
-    }
+
+  // IPC Handlers
+  ipcMain.on('action-from-strip', (_, data) => {
+    mainWindow.webContents.send('perform-action', data);
   });
 
   ipcMain.on('copy-to-clipboard', (_, text) => {
     clipboard.writeText(text || '');
   });
 
-  ipcMain.on('stripe-copy-request', (event) => {
-    if (mainWindow && mainWindow.webContents) {
-      mainWindow.webContents.send('perform-copy-summernote');
-    }
+  ipcMain.on('stripe-copy-request', () => {
+    mainWindow.webContents.send('perform-copy-summernote');
   });
 
-  ipcMain.on('resize-floating-bar', (event, newHeight) => {
+  ipcMain.on('resize-floating-bar', (_, newHeight) => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       const [width] = floatingBar.getSize();
       floatingBar.setSize(width, newHeight);
     }
   });
-  ipcMain.on('expand-floating-bar', () => {
-    animateHeight(300);
-  });
-  
-  ipcMain.on('collapse-floating-bar', () => {
-    animateHeight(60);
-  });
-  ipcMain.on('selected-templates-from-strip', (event, templates) => {
-    if (mainWindow) {
-      mainWindow.webContents.send('templates-selected', templates);
-    }
+
+  ipcMain.on('expand-floating-bar', () => animateHeight(300));
+  ipcMain.on('collapse-floating-bar', () => animateHeight(60));
+
+  ipcMain.on('selected-templates-from-strip', (_, templates) => {
+    mainWindow.webContents.send('templates-selected', templates);
   });
 
-  ipcMain.on('send-to-strip', (event, data) => {
-    if (floatingBar && !floatingBar.isDestroyed()) {
-      floatingBar.webContents.send('from-main-to-strip', data);
-    }
+  ipcMain.on('send-to-strip', (_, data) => {
+    floatingBar.webContents.send('from-main-to-strip', data);
   });
 
   ipcMain.on('trigger-copy', () => {
-    if (mainWindow) {
-      mainWindow.focus();
-      mainWindow.webContents.send('trigger-copy');
-    }
+    mainWindow.focus();
+    mainWindow.webContents.send('trigger-copy');
   });
 
   ipcMain.handle('restart_app', () => {
     autoUpdater.quitAndInstall();
   });
 
-  function sendToStrip(data) {
-    if (floatingBar && !floatingBar.isDestroyed()) {
-      floatingBar.webContents.send('from-main-to-strip', data);
-    }
-  }
-
+  // Dummy send to floating bar
   setTimeout(() => {
-    sendToStrip({
+    floatingBar.webContents.send('from-main-to-strip', {
       type: 'updatePatientInfo',
       payload: {
         name: 'John Doe233324',
@@ -164,9 +149,9 @@ function createWindows(initialAccession = null) {
     });
 
     autoUpdater.on('update-available', () => {
-      if (mainWindow) {
-        mainWindow.setEnabled(false); // ⛔ Disable interaction with the app
-      }
+      console.log('Update available');
+      if (mainWindow) mainWindow.setEnabled(false);
+      if (floatingBar && !floatingBar.isDestroyed()) floatingBar.close();
       createUpdateWindow();
     });
 
@@ -179,40 +164,33 @@ function createWindows(initialAccession = null) {
     });
 
     autoUpdater.on('download-progress', (progress) => {
-      if (updateWindow && updateWindow.webContents) {
-        updateWindow.webContents.send('download_progress', progress);
-      }
+      updateWindow.webContents.send('download_progress', progress);
     });
 
     autoUpdater.on('update-downloaded', () => {
-      if (updateWindow && updateWindow.webContents) {
-        updateWindow.webContents.send('update_downloaded');
-      }
-      if (mainWindow) {
-        mainWindow.setEnabled(true); // Optional, re-enable interaction if needed
-      }
+      updateWindow.webContents.send('update_downloaded');
     });
   });
 }
+
 function animateHeight(targetHeight) {
   if (!floatingBar || floatingBar.isDestroyed()) return;
 
   const { x, y } = floatingBar.getBounds();
   let { width, height } = floatingBar.getBounds();
-
   const step = targetHeight > height ? 10 : -10;
 
   const interval = setInterval(() => {
     height += step;
-
     floatingBar.setBounds({ x, y, width, height });
 
     if ((step > 0 && height >= targetHeight) || (step < 0 && height <= targetHeight)) {
       floatingBar.setBounds({ x, y, width, height: targetHeight });
       clearInterval(interval);
     }
-  }, 10); // speed of animation
+  }, 10);
 }
+
 function startTelnetServer() {
   const server = net.createServer((socket) => {
     console.log(`Telnet client connected: ${socket.remoteAddress}:${socket.remotePort}`);
@@ -225,7 +203,7 @@ function startTelnetServer() {
 
       if (buffer.includes('\n')) {
         const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop(); // Save any partial line
+        buffer = lines.pop();
 
         for (let line of lines) {
           const input = line.trim();
@@ -233,14 +211,12 @@ function startTelnetServer() {
 
           if (input.startsWith('OPEN')) {
             const accession = input.split(' ')[1].trim();
-
             const url = `https://trexascribe.medreport360.com/worksheets/scribe/index?ano=${accession}`;
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.loadURL(url);
             } else {
               createWindows(accession);
             }
-            // mainWindow.webContents.openDevTools();
             socket.write(`Loading accession ${accession}...\r\n`);
           } else {
             socket.write('Invalid command. Use ACCESSION:<number>\r\n');
