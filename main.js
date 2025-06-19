@@ -10,7 +10,7 @@ let updateWindow = null;
 function createUpdateWindow(info = {}) {
   updateWindow = new BrowserWindow({
     width: 450,
-    height: 280,
+    height: 450,
     frame: false,
     alwaysOnTop: true,
     modal: true,
