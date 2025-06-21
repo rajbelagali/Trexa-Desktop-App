@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, clipboard, globalShortcut} = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const net = require('net');
@@ -45,7 +45,7 @@ function createWindows(initialAccession = null) {
     width,
     height,
     x: 0,
-    y: 58,
+    y: 0,
     // show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -136,6 +136,7 @@ function createWindows(initialAccession = null) {
     if (mainWindow) {
       console.log('Login success - disabling main window input');
       mainWindow.setIgnoreMouseEvents(true);
+      mainWindow.minimize();
     }
   
     if (floatingBar && !floatingBar.isDestroyed()) {
@@ -266,12 +267,36 @@ function startTelnetServer() {
 app.whenReady().then(() => {
   createWindows();
   startTelnetServer();
+
+  const successX = globalShortcut.register('Control+Alt+Shift+X', () => {
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      floatingBar.webContents.send('shortcut-x-pressed');
+    }
+  });
+  const successY = globalShortcut.register('Control+Alt+Shift+Y', () => {
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      floatingBar.webContents.send('shortcut-y-pressed');
+    }
+  });
+  const successZ = globalShortcut.register('Control+Alt+Shift+Z', () => {
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      floatingBar.webContents.send('shortcut-z-pressed');
+    }
+  });
+  const successW = globalShortcut.register('Control+Alt+Shift+W', () => {
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      floatingBar.webContents.send('shortcut-w-pressed');
+    }
+  });
+
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
 app.on('activate', () => {
   if (mainWindow === null) createWindows();
 });
