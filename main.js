@@ -45,7 +45,7 @@ function createWindows(initialAccession = null) {
     width,
     height,
     x: 0,
-    y: 50,
+    y: 58,
     // show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -87,7 +87,6 @@ function createWindows(initialAccession = null) {
   });
 
   floatingBar.loadFile('index.html');
-  // floatingBar.webContents.openDevTools();
   floatingBar.on('closed', () => {
     floatingBar = null;
   });
