@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onTriggerCopy: (callback) => ipcRenderer.on('trigger-copy', () => callback()),
   onUpdateAvailable: (callback) => ipcRenderer.on('update_available', callback),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update_downloaded', callback),
-
+  notifyLoginSuccess: () => ipcRenderer.send('login-success'),
   restartApp: () => ipcRenderer.send('restart_app'),
   writeClipboardHtml: (html, plain) => {
     clipboard.write({

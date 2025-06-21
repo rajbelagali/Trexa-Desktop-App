@@ -79,6 +79,7 @@ function createWindows(initialAccession = null) {
     skipTaskbar: true,
     resizable: false,
     roundedCorners: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'floating-preload.js'),
       nodeIntegration: false,
@@ -130,6 +131,16 @@ function createWindows(initialAccession = null) {
 
   ipcMain.handle('restart_app', () => {
     autoUpdater.quitAndInstall();
+  });
+  ipcMain.on('login-success', () => {
+    if (mainWindow) {
+      console.log('Login success - disabling main window input');
+      mainWindow.setIgnoreMouseEvents(true);
+    }
+  
+    if (floatingBar && !floatingBar.isDestroyed()) {
+      floatingBar.show(); // <--- show floating bar here
+    }
   });
 
   // Dummy patient info
