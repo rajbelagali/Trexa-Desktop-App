@@ -45,7 +45,8 @@ function createWindows(initialAccession = null) {
     width,
     height,
     x: 0,
-    y: 68,
+    y: 50,
+    // show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -61,7 +62,6 @@ function createWindows(initialAccession = null) {
     : 'https://trexascribe.medreport360.com/login';
 
   mainWindow.loadURL(targetURL);
-
   mainWindow.on('closed', () => {
     if (floatingBar && !floatingBar.isDestroyed()) floatingBar.close();
     mainWindow = null;
@@ -70,7 +70,7 @@ function createWindows(initialAccession = null) {
 
   floatingBar = new BrowserWindow({
     width,
-    height: 60,
+    height: 38,
     x: 10,
     y: 10,
     frame: false,
@@ -87,6 +87,7 @@ function createWindows(initialAccession = null) {
   });
 
   floatingBar.loadFile('index.html');
+  // floatingBar.webContents.openDevTools();
   floatingBar.on('closed', () => {
     floatingBar = null;
   });
