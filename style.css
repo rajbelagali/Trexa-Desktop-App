@@ -145,6 +145,7 @@ background-color: #555;
   width: 0px !important;
   height: 0px !important;
   pointer-events: none;
+  display: none;
 }
 #templateSearch,
 input,
@@ -190,4 +191,11 @@ i.fas {
 }
 .button i {
   padding: 3px;
+}
+div#max-btn,#close-btn {
+  width: auto;
+}
+#close-btn {
+  background-color: red;
+  color: #fff;
 }

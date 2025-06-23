@@ -33,3 +33,9 @@ contextBridge.exposeInMainWorld('stripResponceAPI', {
 contextBridge.exposeInMainWorld('RIS_AVL', {
   onMainMessage: (callback) => ipcRenderer.on('from-main-to-strip', (_, data) => callback(data))
 });
+contextBridge.exposeInMainWorld('windowControlAPI', {
+  toggleMainWindow: () => ipcRenderer.send('toggle-main-window')
+});
+contextBridge.exposeInMainWorld('floatingAppControl', {
+  closeApp: () => ipcRenderer.send('close-app')
+});

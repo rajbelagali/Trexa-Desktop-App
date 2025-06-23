@@ -151,6 +151,12 @@
       <span><i class="fas fa-edit"></i></span>
       <label>Edit</label>
     </div>
+    <div class="button" id="max-btn" onclick="toggleMainWindow()">
+      <span><i class="fas fa-thin fa-angles-up"></i></span>
+    </div>
+    <div class="button" id="close-btn" onclick="closeWindow()">
+      <span><i class="fas fa-thin fa-close"></i></span>
+    </div>
   </div>
 
   <!-- JS & Tagify -->
@@ -278,6 +284,9 @@
           btn.classList.add('disabled-btn');
         }
       });
+      if($('#dictateBtn').find('.fa-microphone').length == 0) {
+          resetDictate();
+      }
       $('#template-select').select2().val(['78']).trigger('change');
     }
     function renableSubmit() {
@@ -476,6 +485,22 @@
     //   if (e.key === "Alt") altPressed = false;
     //   if (e.key === "Shift") shiftPressed = false;
     // });
+  </script>
+  <script>
+    let maxEnable = false;
+    function toggleMainWindow() {
+      window.windowControlAPI.toggleMainWindow();
+      if(!maxEnable) {
+        $('#max-btn').find('.fas').removeClass('fa-angles-up').toggleClass('fa-angles-down');
+        maxEnable = true;
+      } else {
+        $('#max-btn').find('.fas').removeClass('fa-angles-down').toggleClass('fa-angles-up')
+        maxEnable = false;
+      }
+    }
+    function closeWindow() {
+      window.floatingAppControl.closeApp();
+    }
   </script>
 </body>
 </html>

@@ -128,9 +128,32 @@ function createWindows(initialAccession = null) {
     mainWindow.focus();
     mainWindow.webContents.send('trigger-copy');
   });
-
+  ipcMain.on('close-app', () => {
+    app.quit();
+  });
   ipcMain.handle('restart_app', () => {
     autoUpdater.quitAndInstall();
+  });
+  let isMainWindowMaximized = false;
+
+  ipcMain.on('toggle-main-window', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+      mainWindow.focus();
+      isMainWindowMaximized = true;
+      mainWindow.maximize();
+      return;
+    }
+
+    if (isMainWindowMaximized) {
+      mainWindow.minimize();
+      isMainWindowMaximized = false;
+    } else {
+      mainWindow.maximize();
+      isMainWindowMaximized = true;
+    }
   });
   ipcMain.on('login-success', () => {
     if (mainWindow) {
@@ -290,7 +313,6 @@ app.whenReady().then(() => {
   });
 
 });
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
