@@ -117,7 +117,7 @@
     </div>
   
     <!-- Submit -->
-    <div class="button disabled-btn" id="submit-btn" onclick="window.stripAPI.triggerMainAction('submit')">
+    <div class="button disabled-btn" id="submit-btn" onclick="submitFunction()">
       <span><i class="fas fa-paper-plane"></i></span>
       <label>Submit</label>
     </div>
@@ -377,6 +377,7 @@
           }
         });
         submitBtn.classList.add('disabled-btn');
+        $('#copy-btn').trigger('click'); 
         editBtn.style.display = '';
       }
     });
@@ -500,6 +501,9 @@
     }
     function closeWindow() {
       window.floatingAppControl.closeApp();
+    }
+    function submitFunction() {
+      window.stripAPI.triggerMainAction('submit');
     }
   </script>
 </body>
