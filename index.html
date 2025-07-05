@@ -505,6 +505,22 @@
     function submitFunction() {
       window.stripAPI.triggerMainAction('submit');
     }
+    async function activateKey(key) {
+      const machineId = await window.electronAPI.getMachineId();
+      const response = await fetch("/keylicence/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_key: key, machine_id: machineId })
+      });
+      const result = await response.json();
+
+      if (result.valid) {
+        localStorage.setItem("license", JSON.stringify({ key, expiry: result.expiry }));
+        alert("License activated!");
+      } else {
+        alert("Invalid license: " + (result.reason || "unknown error"));
+      }
+    }
   </script>
 </body>
 </html>

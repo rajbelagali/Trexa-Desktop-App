@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Activate Product</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+
+    img {
+      height: 80px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="assets/img/l44_1.png" alt="Logo">
+    <h2>Activate Your Product</h2>
+    <p>This machine has been auto-registered. Click activate to confirm.</p>
+    <input id="productKey" placeholder="Enter product key" />
+    <button id="activateBtn" onclick="activate()">Activate</button>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { productKey, machineId } = await window.electronAPI.getAutoProductKey();
+      document.getElementById('productKey').value = productKey;
+
+      const expired = await window.electronAPI.isLicenseExpired?.();
+      if (expired) {
+        document.getElementById('status').innerText = '❌ Your license has expired. please contact mail to support@trexa.com';
+        document.getElementById('activateBtn').disabled = true;
+        document.getElementById('productKey').disabled = true;
+      }
+    });
+
+    async function activate() {
+      const key = document.getElementById('productKey').value;
+      const statusEl = document.getElementById('status');
+      
+      const valid = await window.electronAPI.validateKey(key);
+
+      if (valid) {
+        statusEl.innerText = '✅ Product activated successfully. Opening login...';
+        statusEl.style.color = 'green'; // ✅ Make it green
+        setTimeout(() => {
+          window.electronAPI.openLoginPage();
+        }, 3000);
+      } else {
+        statusEl.innerText = "❌ Invalid Product Key.";
+        statusEl.style.color = 'red';   // ❌ Make it red for failure
+      }
+    }
+  </script>
+</body>
+</html>

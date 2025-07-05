@@ -1,7 +1,74 @@
 const { app, BrowserWindow, screen, ipcMain, clipboard, globalShortcut} = require('electron');
+const { machineIdSync } = require('node-machine-id');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const net = require('net');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fs = require('fs');
+let isSyncing = false; 
+
+// Fix potential network issues
+app.commandLine.appendSwitch('disable-http2'); // WebSocket/HTTP2 conflicts
+app.commandLine.appendSwitch('disable-quic');  // Disable QUIC protocol
+app.commandLine.appendSwitch('ignore-certificate-errors'); // If certs are an issue
+app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2'); // Enforce TLS 1.2+
+
+// Optional: Force socket buffer size (can help with unstable or fragmented data)
+app.commandLine.appendSwitch('socket-buffer-size', '65536');
+
+ipcMain.handle('get-auto-key', async () => {
+  const machineId = machineIdSync();
+  const res = await fetch('https://trexascribe.medreport360.com/keylicence.php?action=generate', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer 78sdfjhgfd9808sdfl-kjdasd32445bkj35',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({ machine_id: machineId })
+  });
+
+  const text = await res.text();
+  // console.log('Raw response:', text);
+
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON:', err);
+    return { error: 'Invalid JSON response from server' };
+  }
+
+  return { productKey: data.product_key, machineId };
+});
+ipcMain.handle('validate-product-key', async (_, { productKey }) => {
+  const machineId = machineIdSync();
+  try {
+    const res = await fetch('https://trexascribe.medreport360.com/keylicence.php?action=validate', {
+      method: 'POST',
+      headers: {
+        "Authorization": `Bearer 78sdfjhgfd9808sdfl-kjdasd32445bkj35`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `product_key=${encodeURIComponent(productKey)}&machine_id=${encodeURIComponent(machineId)}`
+    });
+
+    const text = await res.text();
+    // console.log("Raw response:", text); // helpful for debugging
+
+    const result = JSON.parse(text);
+    if (result.valid) {
+      const data = { activated: true, expiry: result.expiry_date };
+      fs.writeFileSync(path.join(app.getPath('userData'), 'activation.json'), JSON.stringify(data));
+      return true;
+    }
+
+    return false;
+
+  } catch (error) {
+    console.error("Validation error:", error);
+    return false;
+  }
+});
 
 let mainWindow;
 let floatingBar;
@@ -38,7 +105,94 @@ function createUpdateWindow(info = {}) {
   });
 }
 
+function checkLocalLicense() {
+  const licensePath = path.join(app.getPath('userData'), 'activation.json');
+  if (fs.existsSync(licensePath)) {
+    const data = JSON.parse(fs.readFileSync(licensePath));
+    if (new Date(data.expiry) > new Date()) {
+      return true;
+    }
+  }
+  return false;
+}
+ipcMain.handle('isLicenseExpired', () => {
+  const licensePath = path.join(app.getPath('userData'), 'activation.json');
+  if (fs.existsSync(licensePath)) {
+    const data = JSON.parse(fs.readFileSync(licensePath));
+    return new Date(data.expiry) < new Date();
+  }
+  return false;
+});
+ipcMain.on('open-login-page', () => {
+  // console.log('➡️ open-login-page received');
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.loadURL('https://trexascribe.medreport360.com/login');
+    return;
+  }
+
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+  mainWindow = new BrowserWindow({
+    width,
+    height,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    }
+  });
+
+  mainWindow.setTitle('Trexa App');
+  mainWindow.loadURL('https://trexascribe.medreport360.com/login');
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  // Close all other windows (like activation)
+  const windows = BrowserWindow.getAllWindows();
+  for (const win of windows) {
+    if (win !== mainWindow) {
+      win.close();
+    }
+  }
+});
+
 function createWindows(initialAccession = null) {
+  const licensePath = path.join(app.getPath('userData'), 'activation.json');
+  if (!fs.existsSync(licensePath)) {
+    // Show product key entry UI if activation file is missing
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const activationWindow = new BrowserWindow({
+      width,
+      height,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true
+      }
+    });
+    activationWindow.loadFile('activation.html');
+    // activationWindow.webContents.openDevTools();
+    return;
+  }
+  const data = JSON.parse(fs.readFileSync(licensePath));
+  if (new Date(data.expiry) < new Date()) {
+    // License expired, show activation UI again
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const activationWindow = new BrowserWindow({
+      width,
+      height,
+      frame:true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true
+      }
+    });
+    activationWindow.loadFile('activation.html');
+    return;
+  }
+
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
@@ -46,7 +200,6 @@ function createWindows(initialAccession = null) {
     height,
     x: 0,
     y: 0,
-    // show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -124,6 +277,21 @@ function createWindows(initialAccession = null) {
     }
   });
 
+  function checkExpiryWarning(mainWindow) {
+    try {
+      const file = fs.readFileSync(path.join(app.getPath('userData'), 'activation.json'));
+      const { expiry } = JSON.parse(file);
+      const daysLeft = (new Date(expiry) - new Date()) / (1000 * 60 * 60 * 24);
+      console.log('expiry is checking');
+      console.log(daysLeft);
+      if (daysLeft <= 0) {
+        mainWindow.webContents.send('license-expired');
+      } else if (daysLeft < 7) {
+        mainWindow.webContents.send('license-expiry-warning', Math.ceil(daysLeft));
+      }
+    } catch {}
+  }
+
   ipcMain.on('trigger-copy', () => {
     mainWindow.focus();
     mainWindow.webContents.send('trigger-copy');
@@ -136,6 +304,26 @@ function createWindows(initialAccession = null) {
   });
   let isMainWindowMaximized = false;
 
+  // ipcMain.on('toggle-main-window', () => {
+  //   if (!mainWindow || mainWindow.isDestroyed()) return;
+  
+  //   if (mainWindow.isMinimized()) {
+  //     mainWindow.restore();
+  //     mainWindow.focus();
+  //     isMainWindowMaximized = true;
+  //     mainWindow.maximize();
+  //     syncFloatingBarToMain();
+  //   } else if (mainWindow.isMaximized() || isMainWindowMaximized) {
+  //     mainWindow.unmaximize();  // Restore to normal size instead of minimizing
+  //     isMainWindowMaximized = false;
+  //     // syncFloatingBarToMain();
+  //   } else {
+  //     mainWindow.maximize();
+  //     isMainWindowMaximized = true;
+  //     syncFloatingBarToMain();
+  //   }
+  // });
+  
   ipcMain.on('toggle-main-window', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
@@ -161,13 +349,12 @@ function createWindows(initialAccession = null) {
       mainWindow.setIgnoreMouseEvents(true);
       mainWindow.minimize();
     }
-  
+
     if (floatingBar && !floatingBar.isDestroyed()) {
-      floatingBar.show(); // <--- show floating bar here
+      floatingBar.show();
     }
   });
 
-  // Dummy patient info
   setTimeout(() => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('from-main-to-strip', {
@@ -180,18 +367,15 @@ function createWindows(initialAccession = null) {
       });
     }
   }, 2000);
-
+  mainWindow.webContents.setUserAgent(
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0'
+  );
   mainWindow.webContents.once('did-finish-load', () => {
     console.log('Checking for updates...');
+    checkExpiryWarning(mainWindow);
     autoUpdater.checkForUpdatesAndNotify();
 
-    // setTimeout(() => {
-    //   createUpdateWindow({
-    //     version: 'v1.2.3',
-    //     releaseNotes: '• Bug fixes\n• Performance improvements\n• UI tweaks',
-    //     releaseDate: new Date().toISOString()
-    //   });
-    // }, 3000);
     autoUpdater.on('checking-for-update', () => {
       console.log('Checking for update...');
     });
@@ -222,6 +406,16 @@ function createWindows(initialAccession = null) {
         updateWindow.webContents.send('update_downloaded');
       }
     });
+  });
+ // Listen for move events
+  mainWindow.on('move', () => {
+    if (isSyncing) return;
+    syncFloatingBarToMain();
+  });
+
+  floatingBar.on('move', () => {
+    if (isSyncing) return;
+    syncMainToFloatingBar();
   });
 }
 
@@ -288,31 +482,79 @@ function startTelnetServer() {
 }
 
 app.whenReady().then(() => {
-  createWindows();
-  startTelnetServer();
+  if (checkLocalLicense()) {
+    createWindows();
+    startTelnetServer();
+  } else {
+    // Show activation screen instead or prompt to enter key
+    // Optionally: createActivationWindow();
+    createWindows();
+  }
 
-  const successX = globalShortcut.register('Control+Alt+Shift+X', () => {
+  globalShortcut.register('Control+Alt+Shift+X', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('shortcut-x-pressed');
     }
   });
-  const successY = globalShortcut.register('Control+Alt+Shift+Y', () => {
+  globalShortcut.register('Control+Alt+Shift+Y', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('shortcut-y-pressed');
     }
   });
-  const successZ = globalShortcut.register('Control+Alt+Shift+Z', () => {
+  globalShortcut.register('Control+Alt+Shift+Z', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('shortcut-z-pressed');
     }
   });
-  const successW = globalShortcut.register('Control+Alt+Shift+W', () => {
+  globalShortcut.register('Control+Alt+Shift+W', () => {
     if (floatingBar && !floatingBar.isDestroyed()) {
       floatingBar.webContents.send('shortcut-w-pressed');
     }
   });
-
 });
+function syncFloatingBarToMain() {
+  if (!mainWindow || !floatingBar || floatingBar.isDestroyed()) return;
+
+  const [mainX, mainY] = mainWindow.getPosition();
+  const [mainW, mainH] = mainWindow.getSize();
+  const [floatW, floatH] = floatingBar.getSize();
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+  // Place floating bar just below mainWindow
+  const newX = mainX + (mainW - floatW) / 2;
+  const newY = mainY + mainH + 10;
+
+  isSyncing = true;
+  floatingBar.setBounds({
+    x: 10,
+    y: 10,
+    width: width,
+    height: 38
+  });
+  isSyncing = false;
+}
+
+function syncMainToFloatingBar() {
+  if (!mainWindow || !floatingBar || mainWindow.isDestroyed()) return;
+
+  const [floatX, floatY] = floatingBar.getPosition();
+  const [mainW, mainH] = mainWindow.getSize();
+  const [floatW, floatH] = floatingBar.getSize();
+
+  // Move main window just above floating bar
+  const newX = floatX - (mainW - floatW) / 2;
+  const newY = floatY - mainH - 10;
+
+  isSyncing = true;
+  mainWindow.setBounds({
+    x: Math.round(newX),
+    y: Math.round(newY),
+    width: mainW,
+    height: mainH
+  });
+  isSyncing = false;
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });

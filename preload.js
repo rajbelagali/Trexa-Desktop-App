@@ -6,6 +6,12 @@ contextBridge.exposeInMainWorld('mainAPI', {
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  getAutoProductKey: () => ipcRenderer.invoke('get-auto-key'),
+  openLoginPage: () => ipcRenderer.send('open-login-page'),
+  onLicenseWarning: (cb) => ipcRenderer.on('license-expiry-warning', (_, days) => cb(days)),
+  onLicenseExpired: (cb) => ipcRenderer.on('license-expired', cb),
+  validateKey: (key) => ipcRenderer.invoke('validate-product-key', { productKey: key }),
+  isLicenseExpired: () => ipcRenderer.invoke('isLicenseExpired'),
   sendToStrip: (data) => ipcRenderer.send('send-to-strip', data),
   sendToStrip1: (data) => ipcRenderer.send('send-to-strip', data),
   sendToStrip2: (data) => ipcRenderer.send('send-to-strip', data),

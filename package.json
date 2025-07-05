@@ -46,7 +46,9 @@
     ]
   },
   "dependencies": {
-    "electron-updater": "^6.6.2"
+    "electron-updater": "^6.6.2",
+    "node-fetch": "^3.3.2",
+    "node-machine-id": "^1.1.12"
   },
   "devDependencies": {
     "electron": "^29.4.6",
